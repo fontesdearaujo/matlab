@@ -1,0 +1,5 @@
+function [H_normal, pValor, KSstatistic] = KolmogorovSmirnov (x,y,a)
+    %valor do teste, p-valor, real valor da estatística
+    [H_normal, pValor, KSstatistic] = kstest2(x, y, 'Alpha', a);
+    
+end 
