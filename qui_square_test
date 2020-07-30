@@ -1,0 +1,12 @@
+function [soma,qui_valor] = qui_quadrado(a,b,m,n) %amostras observadas, amostras sintéticas, quantidade de linhas, quantidade de colunas
+    gl = (m-1)*(n-1); %grau de liberdade
+    soma = 0;
+    for i = 1 : m
+        z = ((a(i)-b(i))^2);
+        qui = (z)/b(i);
+        soma = soma + qui;   
+    end
+    
+    qui_valor=chi2inv(0.95,gl);
+    
+end
