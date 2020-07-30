@@ -1,0 +1,187 @@
+%cd dir
+%dados: epileptologie-bonn.de/cms/front_content.php?idcat=193&lang=3&changelang=3
+%% leitura dos dados 
+data=table2array(readtable('file.csv'));
+amostras = data(:,2); %separação das amostras
+tempo = data(:,1); %separação dos tempos
+
+% %dados como table
+% colNames={'tempo','amostras'};
+% data_table = array2table(data, 'VariableNames', colNames);
+
+%% plot da serie
+% quantidade de amostras: 4097
+% tempo total de expimento: 23.6 segundos
+% Obs.: tempo utilizado em milissegundos para melhor visualização
+
+plot_serie_total = plot (tempo,amostras);
+title('EEG time series')
+xlabel('tempo (milissegundos)')
+ylabel('Sinal EEG')
+
+%% Cálculo da média, a variância, o desvio padrão, valor máximo, valor mínimo
+
+%média
+media_amostras= mean(amostras);
+
+%variância 
+variancia = var(amostras);
+
+%desvio padrão
+desvio_padrao = sqrt(variancia);
+desvio_padrao_formula = std(amostras);
+
+%valor máximo e mínimo 
+maximo = max(amostras); 
+minimo = min(amostras); 
+
+fprintf('média: %.3f, variância: %.3f, desvio padrão: %.3f, valor máximo: %.3f, valor mínimo: %.3f\n', ...
+media_amostras, variancia, desvio_padrao, maximo, minimo);
+
+%% Função de distribuição de probabilidade (pdf)
+
+temp_q= num2cell(amostras);
+
+%normalização de dados do tipo cell
+fnom = @(v) [(v(1:end-1) - min(v(1:end-1)))/(max(v(1:end-1))-min(v(1:end-1))), v(end)];
+amostras_normalizado = cell2mat(cellfun(fnom, temp_q, 'UniformOutput', false));
+amostras_normalizado(:,1)=[];
+
+% histograma representando a função de distribuição de probabilidade
+hist(amostras_normalizado,50); %50 escolhido arbitrariamente
+%usando ksdensity
+ksdensity(amostras); 
+
+subplot(1, 2, 1);
+hist(amostras_normalizado,50);
+title('Histograma da série EEG');
+subplot(1, 2, 2);
+ksdensity(amostras);
+title('ksdensity');
+
+%% Amostras sintética das distribuições: normal, poisson, exponencial 
+
+% Distribuição normal
+amostras_normal  = (normrnd(media_amostras, desvio_padrao, 1, length(amostras)))';
+n_max = max(amostras_normal);
+n_min = min (amostras_normal);
+n_var = var(amostras_normal);
+n_dp = sqrt(amostras_normal);
+n_ks = ksdensity(amostras_normal);
+n_hist = histogram(amostras_normal);
+
+% Distribuição poisson
+lambda = media_amostras;
+amostras_poisson = poissrnd(1000, 1 , length(amostras));
+p_max = max(amostras_poisson);
+p_min = min (amostras_poisson);
+p_var = var(amostras_poisson);
+p_dp = sqrt(amostras_poisson);
+p_ks = ksdensity(amostras_poisson);
+p_hist = histogram(amostras_poisson);
+
+% Distribuição exponencial 
+amostras_exponencial = exprnd(media_amostras, 1, length(amostras));
+e_max = max(amostras_exponencial);
+e_min = min (amostras_exponencial);
+e_var = var(amostras_exponencial);
+e_dp = sqrt(amostras_exponencial);
+e_ks = ksdensity(amostras_exponencial);
+e_hist = histogram(amostras_exponencial);
+
+%plot 
+subplot(2, 2, 1);
+hist(amostras_normalizado,50)
+title('Distribuição da Série EEG');
+subplot(2, 2, 2);
+histogram(amostras_normal)
+title('Distribuição Normal');
+subplot(2, 2, 3);
+histogram(amostras_poisson);
+title('Distribuição de Poisson');
+subplot(2, 2, 4);
+histogram(amostras_exponencial);
+title('Distribuição Exponencial');
+
+%% Testes de hipótese
+
+% Teste de Kolmogorov-Smirnov para distribuição normal
+% alpha = 0.01   
+[KS_n_H_01, KS_n_pValor_01, KS_n_statistic_01] = KolmogorovSmirnov(amostras,amostras_normal,0.01);
+% alpha = 0.05   
+[KS_n_H_05, KS_n_pValor_05, KS_n_statistic_05] = KolmogorovSmirnov(amostras,amostras_normal,0.05);
+% alpha = 0.10   
+[KS_n_H_1, KS_n_pValor_1, KS_n_statistic_1] = KolmogorovSmirnov(amostras,amostras_normal,0.10);
+fprintf('Teste: Kolmogorov-Smirnov - Distribuição normal\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\n', KS_n_H_01,KS_n_pValor_01,KS_n_statistic_01, KS_n_H_05,KS_n_pValor_05,KS_n_statistic_05, KS_n_H_1,KS_n_pValor_1,KS_n_statistic_1);
+
+% Teste de Kolmogorov-Smirnov para distribuição exponencial
+% alpha = 0.01   
+[KS_e_H_01, KS_e_pValor_01, KS_e_statistic_01] = KolmogorovSmirnov(amostras,amostras_exponencial,0.01);
+% alpha = 0.05   
+[KS_e_H_05, KS_e_pValor_05, KS_e_statistic_05] = KolmogorovSmirnov(amostras,amostras_exponencial,0.05);
+% alpha = 0.10   
+[KS_e_H_1, KS_e_pValor_1, KS_e_statistic_1] = KolmogorovSmirnov(amostras,amostras_exponencial,0.10);
+fprintf('\n\nTeste: Kolmogorov-Smirnov - Distribuição exponencial\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\n', KS_e_H_01,KS_e_pValor_01,KS_e_statistic_01, KS_e_H_05,KS_e_pValor_05,KS_e_statistic_05, KS_e_H_1,KS_e_pValor_1,KS_e_statistic_1);
+
+% Teste de Kolmogorov-Smirnov para distribuição poisson
+% alpha = 0.01   
+[KS_p_H_01, KS_p_pValor_01, KS_p_statistic_01] = KolmogorovSmirnov(amostras,amostras_poisson,0.01);
+% alpha = 0.05   
+[KS_p_H_05, KS_p_pValor_05, KS_p_statistic_05] = KolmogorovSmirnov(amostras,amostras_poisson,0.05);
+% alpha = 0.10   
+[KS_p_H_1, KS_p_pValor_1, KS_p_statistic_1] = KolmogorovSmirnov(amostras,amostras_poisson,0.10);
+fprintf('\n\nTeste: Kolmogorov-Smirnov - Distribuição poisson\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\nH0: %.3f, p-valor: %.3f, ks-valor: %.3f, alfa: %.3f\n', KS_p_H_01,KS_p_pValor_01,KS_p_statistic_01, KS_p_H_05,KS_p_pValor_05,KS_p_statistic_05, KS_p_H_1,KS_p_pValor_1,KS_p_statistic_1);
+
+%%
+% Friedman's teste 
+% distribuição normal
+friedman_normal = [amostras,amostras_normal];
+[F_n_pValor] = friedman(friedman_normal);
+% distribuição exponencial
+friedman_exponencial=[amostras,(amostras_exponencial)'];
+[F_e_pValor] = friedman(friedman_exponencial);
+% distribuição poisson 
+friedman_poisson=[amostras,(amostras_poisson)'];
+[F_p_pValor] = friedman(friedman_poisson);
+
+fprintf('\nTeste: Friedman - Distribuição normal - p-valor: %.3f',F_n_pValor);
+fprintf('\nTeste: Friedman - Distribuição exponencial - p-valor: %.3f',F_e_pValor);
+fprintf('\nTeste: Friedman - Distribuição poisson - p-valor: %.3f',F_p_pValor);
+
+%% Qui quadrado 
+% Utilizando alfa = 0.05
+r = length(amostras);
+c = 2;
+
+% distribuição normal
+[qn,qn_valor] = qui_quadrado(amostras,amostras_normal,r,c);
+fprintf('\nQui-valor - distribuição normal: q: %.3f, qui_valor: %.3f', qn,qn_valor);
+if (qn>qn_valor)
+    fprintf('\n q > q_valor, logo deve-se rejeitar a hipotese H0\n');
+else
+    fprintf('\n q < q_valor, logo não se deve rejeitar a hipotese H0\n');
+end
+   
+% distribuição exponencial
+[qe,qe_valor] = qui_quadrado(amostras,amostras_exponencial,r,c);
+fprintf('\nQui-valor - distribuição exponencial: q: %.3f, qui_valor: %.3f', qe,qe_valor);
+if (qe>qe_valor)
+    fprintf('\n q > q_valor, logo deve-se rejeitar a hipotese H0\n');
+else
+    fprintf('\n q < q_valor, logo não se deve rejeitar a hipotese H0\n');
+end
+
+% distribuição poisson 
+[qp,qp_valor] = qui_quadrado(amostras,amostras_exponencial,r,c);
+fprintf('\nQui-valor - distribuição poisson: q: %.3f, qui_valor: %.3f', qp,qp_valor);
+if (qp>qp_valor)
+    fprintf('\n q > q_valor, logo deve-se rejeitar a hipotese H0\n');
+else
+    fprintf('\n q < q_valor, logo não se deve rejeitar a hipotese H0\n');
+end
+ 
+%%
+
+
+
+
