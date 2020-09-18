@@ -1,2 +1,2 @@
 # matlab
-Simple operations using MATLAB
+Processos Estocásticos aplicados a séries temporais.
